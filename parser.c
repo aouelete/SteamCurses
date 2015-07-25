@@ -5,28 +5,33 @@
 #include <dirent.h>
 #include "parser.h"
 
-char* get_vals(char* str) {
+char* get_vals(char* str) 
+{
     int start = 0;
     int end = 0;
     int index = 0;
-    while(str[index] != '\0') {
-        if(str[index] == '\"') {
+    
+    while (str[index] != '\0') {
+        if (str[index] == '\"') {
             start = end;
             end = index + 1;
         }
         index++;
     }
     end--;
+    
     char* out =(char*) malloc(sizeof(char)*(end - start + 1));
     strncpy(out , &str[start], end - start);
     out[end - start] = '\0';
+    
     return out;
 }
 
-void sort_games(game_t** games, int size) {
-    for(int i = 1; i < size; i++) {
-        for(int j = 1; j < size; j++) {
-            if(strcmp(games[j - 1]->name, games[j]->name) > 0) {
+void sort_games(game_t** games, int size) 
+{
+    for (int i = 1; i < size; i++) {
+        for (int j = 1; j < size; j++) {
+            if (strcmp(games[j - 1]->name, games[j]->name) > 0) {
                 game_t* tmp = games[j];
                 games[j] = games[j - 1];
                 games[j - 1] = tmp;

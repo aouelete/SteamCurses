@@ -22,7 +22,7 @@ Arch:
 
   * It can also be found under the AUR as steamcurses-git
 
-Simply run ```make``` to build.
+Simply run ```make install``` to build and install.
 
 ### Usage:
 ```
@@ -30,5 +30,6 @@ Simply run ```make``` to build.
    -u --username:         your Steam username
    -p --steam_path:       the path to your steamapps directory
    -w --wine_steam_path:  the path to your wine steamapps directory
+   -m --update_manifests: update the generated manifests
    -h --help:             print help message
 ```

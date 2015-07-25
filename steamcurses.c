@@ -8,28 +8,35 @@
 #include <string.h>
 #include "parser.h"
 
-int launch_game(char* appid, int is_wine) {
+int launch_game(char* appid, int is_wine) 
+{
     char* cmd = NULL;
-    if(is_wine) {
+    
+    if (is_wine) {
         asprintf(&cmd, "wine $WINEPREFIX/drive_c/Program\\ Files/Steam/Steam.exe -applaunch -silent %s 1>> ~/.steam/steamcurses.log 2>> ~/.steam/steamcurses.log", appid);
     } else {
         asprintf(&cmd, "/usr/bin/steam -silent -applaunch %s 1>> ~/.steam/steamcurses.log 2>> ~/.steam/steamcurses.log", appid);
     }
+    
     int status = system(cmd);
     free(cmd);
     cmd = NULL;
+    
     return status;
 }
 
-void print_title(WINDOW* win, char* title) {
+void print_title(WINDOW* win, char* title) 
+{
     int length = strlen(title);
     int x, y;
+    
     getmaxyx(win, y, x);
     mvwprintw(win, 0, x/2 - length/2, title);
     refresh();
 }
 
-void print_help() {
+void print_help() 
+{
     printf("Usage: ./steamcurses -u <username> [options]\n");
     printf("	-u --username:		your Steam username\n");
     printf("	-p --steam_path:	the path to your steamapps directory\n");
@@ -37,12 +44,14 @@ void print_help() {
     printf("	-h --help:		print this help message and exit\n");
 }
 
-int print_menu(WINDOW* win, MENU* menu, game_t** games) {
+int print_menu(WINDOW* win, MENU* menu, game_t** games) 
+{    
     int c;
     int status = 0;
+    
     // Only call getch once
-    while((c = wgetch(win)) != 'q') {
-        switch(c) {
+    while ((c = wgetch(win)) != 'q') {
+        switch (c) {
             case KEY_DOWN:
                 menu_driver(menu, REQ_DOWN_ITEM);
                 break;
@@ -54,10 +63,12 @@ int print_menu(WINDOW* win, MENU* menu, game_t** games) {
                 break;
         }
     }
+    
     return status;
 }
 
-WINDOW* init_ncurses() {
+WINDOW* init_ncurses() 
+{
     // NCurses stuff
     initscr();
     cbreak();
@@ -66,28 +77,34 @@ WINDOW* init_ncurses() {
 
     // Get the max size of the window, and init windows
     WINDOW* win = newwin(LINES - 3, COLS - 1, 0, 0);
+    
     // Give the menu window focus
     keypad(win, TRUE);
+    
     return win;
 }
 
-
-ITEM** init_items(game_t** games, int size) {
+ITEM** init_items(game_t** games, int size) 
+{
     // Populate the array of items
     ITEM **items = (ITEM**)calloc(size + 1, sizeof(ITEM*));
+    
     for (int i = 0; i < size; i++) {
-        if(!games[i]->is_wine) {
+        if (!games[i]->is_wine) {
             items[i] = new_item(games[i]->name, NULL);
         } else {
             items[i] = new_item(games[i]->name, "(Wine)");
         }
         items[i]->index = i;
     }
+    
     items[size] = (ITEM*) NULL;
+    
     return items;
 }
 
-MENU* init_menu(ITEM** items, WINDOW* win) {
+MENU* init_menu(ITEM** items, WINDOW* win) 
+{
     MENU* menu = new_menu((ITEM**)items);
     set_menu_format(menu, LINES - 4, 0);
     set_menu_win(menu, win);
@@ -102,15 +119,16 @@ MENU* init_menu(ITEM** items, WINDOW* win) {
     // Post the menu
     post_menu(menu);
     wrefresh(win);
+    
     return menu;
 }
 
 
-int main(int argc, char* argv[]) {
-
+int main(int argc, char* argv[]) 
+{
     // The current home dir, used to generate default locations 
     char* home = getenv("HOME");
-    if(home == NULL) {
+    if (home == NULL) {
         printf("Error! $HOME is not valid or null\n");
         exit(1);
     }
@@ -126,12 +144,12 @@ int main(int argc, char* argv[]) {
     char* password = NULL;
   
     // Deal with user input
-    for(int i = 1; i < argc; i++) {
-        if(strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--username") == 0) {
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--username") == 0) {
             username = argv[++i];
-        } else if(strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--steam_path") == 0) {
+        } else if (strcmp(argv[i], "-p") == 0 || strcmp(argv[i], "--steam_path") == 0) {
             steam_path = argv[++i];
-        } else if(strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--wine_steam_path") == 0) {
+        } else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--wine_steam_path") == 0) {
             wine_steam_path = argv[++i];
         } else {
             print_help();
@@ -140,10 +158,10 @@ int main(int argc, char* argv[]) {
     }
 
     // If we don't get provided input, make an educated guess or throw errors
-    if(steam_path == NULL) {
+    if (steam_path == NULL) {
         asprintf(&steam_path, "%s/.steam/steam/steamapps/", home);
     }
-    if(username == NULL) {
+    if (username == NULL) {
         printf("Error, no username provided!\n");
         print_help();
         exit(1);
@@ -151,39 +169,40 @@ int main(int argc, char* argv[]) {
 
     password = (char*) getpass("Password: ");
  
-
     // Start up steam
     pid_t child_pid;
     int commpipe[2];
 
     // Set up the pipe
-    if(pipe(commpipe)) {
+    if (pipe(commpipe)) {
         fprintf(parent_log, "Piping Error!\n");
         exit(1);
     }
 
     // Fork off the steam process
-    if((child_pid=fork()) < 0) {
+    if ((child_pid=fork()) < 0) {
         fprintf(parent_log, "Forking Error!\n");
         exit(1);
     }
 
-    if(child_pid == 0) {
+    if (child_pid == 0) {
         // Set STDOUT to be piped to the parent
         dup2(commpipe[1], STDOUT_FILENO);
         close(commpipe[0]);
         setvbuf(stdout, (char*)NULL, _IONBF, 0);
-        // Exec Steam so it can wait for our requests
+        
+	// Exec Steam so it can wait for our requests
         execl("/usr/bin/steam", "/usr/bin/steam", "-silent", "-login", username, password, NULL);
-    }
-    else {
+    } else {
         // Parent Process
         // Parse the manifests to get a list of installed games
         int size = 0;
         int capacity = 100;
-        game_t** games = (game_t**) malloc(capacity * sizeof(game_t*));
+        
+	game_t** games = (game_t**) malloc(capacity * sizeof(game_t*));
         parse_manifests(&size, &capacity, &games, steam_path, 0);
-        if(wine_steam_path) {
+        
+	if (wine_steam_path) {
             parse_manifests(&size, &capacity, &games, wine_steam_path, 1);
         }
         sort_games(games, size);
@@ -207,13 +226,15 @@ int main(int argc, char* argv[]) {
         // Perform clean up
         unpost_menu(my_menu);
         free_menu(my_menu);
-        for(int i = 0; i < size; i++) {
+        
+	for (int i = 0; i < size; i++) {
             free(games[i]->name);
             free(games[i]->appid);
             free(games[i]);
             free_item(my_items[i]);
         }
-        fclose(parent_log);
+        
+	fclose(parent_log);
         free(games);
         free(my_items);
         free(log_path);
@@ -223,7 +244,8 @@ int main(int argc, char* argv[]) {
         steam_path = NULL;
         endwin();
         system("steam -shutdown");
-        return 0;
+        
+	return 0;
     }
 }
 
